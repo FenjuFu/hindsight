@@ -227,8 +227,15 @@ def _strip_reasoning_tags(text: str) -> str:
        thinking models, DeepSeek-R1-0528, Spark-X2.5) produce this whenever the
        server runs without a reasoning parser, since the open tag was part of
        the prompt rather than the completion. Everything up to the first close
-       tag is dropped, unless the response already opened as JSON or a code
-       fence -- then the close tag is a quoted literal, not a reasoning boundary.
+       tag is dropped, unless the response *starts* with ``{``, ``[`` or a code
+       fence -- there the close tag is a quoted literal, not a reasoning
+       boundary. The guard is deliberately that narrow: a stricter one (any
+       fence anywhere before the tag) would stop stripping the common case
+       where the reasoning itself drafts a fenced block. So a close tag quoted
+       inside an answer that opens with prose is still read as a boundary and
+       cuts the prose -- accepted, since it needs the model to talk about the
+       closing tag on its own, against leaking reasoning into every mental
+       model for this family of templates.
     2. Closed blocks: ``<think>...</think>`` removed wherever they appear.
     3. Unclosed blocks: a dangling ``<think>`` with no closing tag (model output
        truncated mid-thought) is removed to end-of-string, but only when it starts
